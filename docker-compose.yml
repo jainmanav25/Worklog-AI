@@ -1,0 +1,29 @@
+services:
+  worklog:
+    build: .
+    image: worklog-ai:local
+    restart: unless-stopped
+    ports:
+      - "${WORKLOG_BIND:-127.0.0.1}:${WORKLOG_PORT:-4317}:4317"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 4317
+      WORKLOG_DATA_DIR: /app/data
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+    volumes:
+      - worklog-data:/app/data
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    expose:
+      - "11434"
+
+volumes:
+  worklog-data:
+  ollama-data:

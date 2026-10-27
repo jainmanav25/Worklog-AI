@@ -1,0 +1,63 @@
+{
+  "name": "worklog-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "dev": "concurrently -k \"npm:server\" \"npm:client\"",
+    "server": "node server/index.js",
+    "client": "vite",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "desktop": "electron .",
+    "dist:win": "npm run build && electron-builder install-app-deps && electron-builder --win nsis",
+    "test": "node --test"
+  },
+  "build": {
+    "appId": "local.worklog.ai",
+    "productName": "WorkLog AI",
+    "asar": true,
+    "files": [
+      "server/**",
+      "dist/**",
+      "desktop/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "WorkLog-AI-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "overrides": {
+    "esbuild": "npm:esbuild-wasm@^0.24.2"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8",
+    "rollup": "npm:@rollup/wasm-node@^4.65.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}
