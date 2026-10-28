@@ -1,64 +1,126 @@
 # WorkLog AI
 
-A private Windows desktop worklog app. Notes and generated worklogs stay on the computer: records are stored in SQLite, and AI requests go only to a locally running Ollama service. There is no cloud AI fallback, activity monitoring, filesystem scan, clipboard access, screenshot capture, or corporate-system integration.
+WorkLog AI is a personal work journal for recording tasks in a format that is easy to review later. You can write a quick note, optionally ask a local AI model to prepare a title and worklog, edit the result, and save it. The app also has task history, search and filters, summaries, and CSV, Excel, and Markdown exports.
 
-## Accounts
+The app is designed to run on your own computer. It saves data in a local SQLite database. Optional AI text generation uses Ollama on your computer; WorkLog AI does not send prompts to a cloud AI service.
 
-Create an account from the sign-in screen with a name, email address, and password of at least 10 characters. Accounts are local to this WorkLog AI database; there is no external identity provider or email service. Each account has its own task history and an HttpOnly session cookie. Existing tasks without an account are assigned to the first account created after this update. Additional accounts cannot see those tasks or each other's worklogs. There is no password reset email flow; keep your password safe.
+## What the app does
 
-## Run in development
+1. You create a local account with your name, email, and password.
+2. You write a short note about work you did, such as `Updated the deployment pipeline and tested it.`
+3. Optionally, select **Generate with local AI**. Ollama suggests a task title, description, comment, category, status, and a rough duration when the note has enough detail.
+4. Review and edit the fields. AI output is a suggestion; enter the actual time yourself when you know it.
+5. Select **Save worklog**. The task is saved to the local database for your account.
+6. Use the dashboard and history to search and filter entries. Reports can be exported as Excel, CSV, or Markdown.
 
-Requirements: Windows 11, Node.js 20+, npm, and (for local generation) [Ollama for Windows](https://ollama.com/download).
+Each account sees its own tasks. Accounts are local to this database: there is no email verification, cloud account, or password reset service. Keep your password safe. When upgrading an older database that has tasks but no accounts, the first account created receives those existing tasks.
 
-1. Open this folder in PowerShell and run `npm install`.
-2. Optional AI setup: copy `.env.example` to `.env`, run `ollama pull llama3.2`, and leave Ollama running. You can set `OLLAMA_MODEL` to another model installed in Ollama.
-3. Run `npm run dev`. Open the Vite URL shown in the terminal (usually `http://localhost:5173`). The local API is bound to `127.0.0.1:4317`.
+## Run manually on Windows
 
-When Ollama is unavailable, you can enter or edit all worklog fields manually and save as usual. AI generation reports the missing local setup; notes are never sent to a hosted provider.
+### Requirements
+
+- Windows 10 or 11
+- Node.js 20 or newer (npm is included with Node.js)
+- Ollama for Windows, only if you want AI generation
+
+### 1. Open the project
+
+Open PowerShell in the project folder (the folder containing `package.json`). If you downloaded the project from GitHub, you can use:
+
+```powershell
+git clone https://github.com/jainmanav25/Worklog-AI.git
+cd Worklog-AI
+```
+
+If you already have the project folder, open PowerShell there instead.
+
+### 2. Install the app dependencies
+
+```powershell
+npm install
+```
+
+### 3. (Optional) Set up local AI
+
+Install and start [Ollama](https://ollama.com/download), then download the default model:
+
+```powershell
+ollama pull llama3.2
+```
+
+Keep Ollama running while you use AI generation. The app uses `http://127.0.0.1:11434` and the `llama3.2` model by default. To use another model already installed in Ollama, copy `.env.example` to `.env` and change `OLLAMA_MODEL` to its name. Restart the app after changing `.env`.
+
+AI is optional. Without Ollama, you can still fill in all fields yourself and save worklogs; only AI generation will be unavailable.
+
+### 4. Start the app
+
+The simplest option starts the API and the development website together:
+
+```powershell
+npm run dev
+```
+
+Open the Vite URL shown in the terminal, usually <http://localhost:5173>. Keep the terminal open while using the app. Press **Ctrl+C** there to stop it.
+
+The API listens on `127.0.0.1:4317`; Vite forwards app requests to it. To run them separately, open two PowerShell windows in the project folder:
+
+```powershell
+# Window 1: start the API
+npm run server
+```
+
+```powershell
+# Window 2: start the website
+npm run client
+```
+
+Then open the URL printed by Vite.
+
+### 5. Sign up and save a worklog
+
+Choose **Sign up**, enter your name, email, and a password of at least 10 characters, and create your account. Then write a note on the Add a task page. You can generate a suggestion if Ollama is ready, edit the suggested fields, and save. Your saved entries are available when you sign in again on this database.
+
+## Where data is stored
+
+When running manually, SQLite data is stored at `data/worklog.db` inside the project folder. The `data` directory is created automatically and is excluded from Git. Back up this file if you want to preserve your worklogs when moving computers or deleting the project.
+
+The Windows desktop installer stores data in Electron's per-user application data directory, under `%APPDATA%\worklog-ai\data\worklog.db`. This is separate from the manual development database.
 
 ## Run with Docker Compose
 
-Requirements: Docker Desktop with the Linux container engine running.
-
-From this folder, run:
+Docker is an alternative to the manual Node.js steps. Install Docker Desktop and start its Linux container engine. In PowerShell, from the project folder, run:
 
 ```powershell
 docker compose up --build -d
 docker compose exec ollama ollama pull llama3.2
 ```
 
-Open `http://localhost:4317`. The `worklog` container serves the UI and API together; the `ollama` container runs the local model. SQLite records and model files use separate named Docker volumes, so they remain after container restarts. The web port binds to localhost by default and Ollama is only exposed inside the Compose network.
+Open <http://localhost:4317>. The Compose setup runs the WorkLog AI website and API in one container and Ollama in another. SQLite files and model files are stored in separate named Docker volumes. They survive container restarts and `docker compose down`.
 
-Useful commands:
+Useful Docker commands:
 
 ```powershell
-docker compose logs -f worklog
-docker compose logs -f ollama
-docker compose down
+docker compose ps                 # Show service status
+docker compose logs -f worklog    # Follow app logs
+docker compose logs -f ollama     # Follow Ollama logs
+docker compose down               # Stop and remove containers; keep saved volumes
+docker compose up -d              # Start the existing services again
 ```
 
-To use a different local model, set `OLLAMA_MODEL` in your shell before `docker compose up`, then pull that model with `docker compose exec ollama ollama pull <model>`. `docker compose down -v` permanently deletes both named volumes, including saved worklogs and downloaded models.
+**Data warning:** `docker compose down -v` removes the named volumes, including saved worklogs and downloaded models. Do not use it unless you intend to delete them. By default the web app port is available only from your own computer (`127.0.0.1:4317`).
 
-The Docker setup stores the SQLite database in the `worklog-data` volume. Back up or remove it with Docker volume tools; the Settings screen can still delete all worklog entries.
+## Tests and other commands
 
-## Build the Windows desktop installer
+```powershell
+npm test          # Run automated API and database tests
+npm run build     # Build the production website into dist/
+npm run desktop   # Launch the Electron desktop shell (start npm run dev separately)
+npm run dist:win  # Build a Windows installer in release/
+```
 
-Run `npm run dist:win`. Electron Builder rebuilds SQLite for Electron, then creates an NSIS installer in `release/`. Install and launch the generated `WorkLog-AI-Setup-1.0.0.exe`. Worklog data is stored under Electron's per-user application data directory in `data/worklog.db`; this is separate from the installed app files. The installer is per-user and does not request administrator privileges.
+## Troubleshooting
 
-To build on a clean Windows machine, install the project dependencies with `npm install` first. The packaging command prepares SQLite's native binding for Electron.
-
-## Data and exports
-
-Development database: `data/worklog.db`. Packaged desktop database: `%APPDATA%\worklog-ai\data\worklog.db` (Electron's user data folder). Use Settings to delete all saved worklogs. Reports provides Excel (`.xlsx`), CSV, and Markdown exports. Treat exported files as copies of your work records.
-
-## Local AI behavior
-
-The default endpoint is `http://127.0.0.1:11434` and the default model is `llama3.2`. Configure `OLLAMA_URL` and `OLLAMA_MODEL` in `.env` for development. Ollama must be installed and the selected model downloaded separately. The app requests JSON worklog fields and labels durations as rough estimates; use `0` when the note does not support a reasonable estimate. Confirm or adjust generated details before saving.
-
-## Commands
-
-- `npm run dev` — local API and Vite development UI
-- `npm test` — SQLite persistence and filter test
-- `npm run build` — production web UI bundle
-- `npm run desktop` — launch the desktop shell (in development, run `npm run dev` in another terminal)
-- `npm run dist:win` — create the Windows installer
+- **The page does not load:** When using manual development mode, check that both API and Vite are running. With Docker, run `docker compose ps` and check `docker compose logs -f worklog`.
+- **AI says it is not connected:** Start Ollama and check `ollama list`. Make sure the configured model is downloaded (for example, `ollama pull llama3.2`). For Docker, download the model with `docker compose exec ollama ollama pull llama3.2`.
+- **I cannot find my old tasks:** Manual mode and Docker use different databases. Manual mode uses `data/worklog.db`; Docker uses its `worklog-data` volume. Tasks are also private to the account that owns them.
+- **I forgot my password:** There is no password reset flow. The app does not have access to an email service to reset it.
