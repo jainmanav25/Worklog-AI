@@ -2,6 +2,10 @@
 
 A private Windows desktop worklog app. Notes and generated worklogs stay on the computer: records are stored in SQLite, and AI requests go only to a locally running Ollama service. There is no cloud AI fallback, activity monitoring, filesystem scan, clipboard access, screenshot capture, or corporate-system integration.
 
+## Accounts
+
+Create an account from the sign-in screen with a name, email address, and password of at least 10 characters. Accounts are local to this WorkLog AI database; there is no external identity provider or email service. Each account has its own task history and an HttpOnly session cookie. Existing tasks without an account are assigned to the first account created after this update. Additional accounts cannot see those tasks or each other's worklogs. There is no password reset email flow; keep your password safe.
+
 ## Run in development
 
 Requirements: Windows 11, Node.js 20+, npm, and (for local generation) [Ollama for Windows](https://ollama.com/download).
